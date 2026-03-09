@@ -10,10 +10,10 @@ datasource db {
 
 model User{
   id        String @id @default(uuid())
-  email     String
+  email     String @unique
   password  String
   name      String
-  photo     String
+  photo     String?
 
   rooms     Room[]//one user have multiple room -> one to many relation
   chats     Chat[]//one user have multiple chat ->one to many relation
