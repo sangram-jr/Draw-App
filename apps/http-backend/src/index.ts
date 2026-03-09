@@ -1,10 +1,15 @@
 import express from "express"
 import jwt from "jsonwebtoken"
-import { JWT_SECRET } from "@repo/backend-common";
+import { JWT_SECRET } from "@repo/backend-common/config";
 import { userMiddleware } from "./middleware";
-import {CreateUserSchema,SigninSchema,CreateRoomSchema} from "@repo/common"
+import {CreateUserSchema,SigninSchema,CreateRoomSchema} from "@repo/common/types"
 
 const app=express();
+
+
+app.get('/test',(req,res)=>{
+    res.send("hello hiiiiiii");
+})
 
 app.post('/signup',(req,res)=>{
 
@@ -45,7 +50,7 @@ app.post('/room',userMiddleware,(req,res)=>{
         return res.json({message:"Incorrect Inputs"});
     }
 
-    
+
     //db call
     res.json({
         roomId:123
