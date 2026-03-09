@@ -1,0 +1,42 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User{
+  id        String @id @default(uuid())
+  email     String
+  password  String
+  name      String
+  photo     String
+
+  rooms     Room[]//one user have multiple room -> one to many relation
+  chats     Chat[]//one user have multiple chat ->one to many relation
+}
+
+
+model Room{
+  id          Int @id @default(autoincrement())
+  slug        String @unique
+  createdAt   DateTime @default(now())
+  adminId     String
+
+  admin      User @relation(fields: [adminId],references: [id])//foreign key to User table's id field with Room table adminId field.
+  chats      Chat[]//one Room has multiple chat
+}
+
+
+model Chat{
+  id        Int @id @default(autoincrement())
+  message   String
+  roomId    Int
+  userId    String
+
+  room      Room @relation(fields: [roomId],references: [id])//foreign key to Room table's id field
+  user      User @relation(fields: [userId],references: [id])//foreign key to User table's id field 
+}
