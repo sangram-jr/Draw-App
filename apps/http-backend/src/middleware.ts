@@ -7,6 +7,8 @@ interface customRequest extends Request{
     userId?:string
 }
 
+
+//verify the token
 export function userMiddleware(req:customRequest,res:Response,next:NextFunction){
     const authHeader=req.headers.authorization ;
     if(!authHeader){
