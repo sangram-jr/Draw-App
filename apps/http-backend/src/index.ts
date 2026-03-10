@@ -151,4 +151,16 @@ app.get('/chat/:roomId',async(req,res)=>{
 })
 
 
+//give the slug, this endpoint return the roomId
+app.get('/room/:slug',async(req,res)=>{
+    const slug=req.params.slug;
+    const room=await prisma.room.findFirst({
+        where:{
+            slug:slug
+        }
+    });
+    res.json({room});
+})
+
+
 app.listen(3001);
