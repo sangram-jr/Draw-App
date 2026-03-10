@@ -2,6 +2,7 @@ import { WebSocketServer,WebSocket } from "ws";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import "dotenv/config";
 import { JWT_SECRET } from "@repo/backend-common/config";
+import {prisma} from "@repo/db/db"
 
 const wss = new WebSocketServer({ port: 8080 });
 
@@ -61,8 +62,9 @@ wss.on('connection', function connection(ws,request) {
     ws
   })
 
+
   //get the message from user and send this message to server
-  ws.on('message', function message(data) {
+  ws.on('message', async function message(data) {
     //msg that server get from the user, that is string, we need to convert this in a object
     const parseData=JSON.parse(data as unknown as string);
 
@@ -92,7 +94,17 @@ wss.on('connection', function connection(ws,request) {
       const roomId=parseData.roomId;
       const message=parseData.message;
 
-      //how many roomId include in the rooms , send them message.
+
+      //1st store the message to the db
+      await prisma.chat.create({
+        data:{
+          roomId,
+          message,
+          userId
+        }
+      })
+
+      //how many roomId include in the rooms , send them message.(2nd broadcast the message to everyone)
       users.forEach(user=>{
         if(user.rooms.includes(roomId)){
           user.ws.send(JSON.stringify({
