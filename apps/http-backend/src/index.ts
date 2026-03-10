@@ -1,5 +1,6 @@
 import express from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
+import bcrypt from "bcrypt";
 import "dotenv/config";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { userMiddleware } from "./middleware";
@@ -33,17 +34,20 @@ app.post('/signup',async(req,res)=>{
     //zod validation
     const parseData=CreateUserSchema.safeParse(req.body);
     if(!parseData.success){
-        return res.json({message:"Incorrect Inputs"});
+        return res.status(403).json({message:"Incorrect Inputs"});
     }
 
-    //todo:hash password
+    //hash password
+    const password=parseData.data.password;
+    const hashPassword=await bcrypt.hash(password,10);
+
 
     //create user
     try {
         const user=await prisma.user.create({
             data:{
                 email:parseData.data.email,
-                password:parseData.data.password,
+                password:hashPassword,
                 name:parseData.data.name
             }
         })
@@ -65,24 +69,33 @@ app.post('/signin',async(req,res)=>{
     //zod validation
     const parseData=SigninSchema.safeParse(req.body);
     if(!parseData.success){
-        return res.json({message:"Incorrect Inputs"});
+        return res.status(403).json({message:"Incorrect Inputs"});
     }
-
-    //Todo: compare the hash password
 
 
     //find user
-    const user=await prisma.user.findFirst({
+    const user=await prisma.user.findUnique({
         where:{
-            email:parseData.data.email,
-            password:parseData.data.password
+            email:parseData.data.email
         }
     })
     if(!user){
         return res.status(403).json({
-            message:"Not Authorized"
+            message:"User not found"
         })
     }
+
+    
+    //compare the hash password
+    const password=parseData.data.password;
+    const isPasswordValid=await bcrypt.compare(password,user.password);
+    if (!isPasswordValid) {
+        return res.status(403).json({
+            message: "Incorrect password"
+        });
+    }
+
+
 
     //generate token
     const token=jwt.sign({
@@ -114,7 +127,7 @@ app.post('/room',userMiddleware,async(req,res)=>{
             roomId:room.id
         })
     } catch (error) {
-        return res.status(411).json({
+        return res.status(403).json({
             message:"Room already exist"
         })
     }
