@@ -137,17 +137,24 @@ app.post('/room',userMiddleware,async(req,res)=>{
 
 //get last messages
 app.get('/chat/:roomId',async(req,res)=>{
-    const roomId=Number(req.params.roomId);
-    const messages=await prisma.chat.findMany({
-        where:{
-            roomId:roomId
-        },
-        orderBy:{
-            id:"desc"
-        },
-        take:50 //return only latest 50 messages
-    });
-    res.json({messages});
+    try {
+       const roomId=Number(req.params.roomId);
+        const messages=await prisma.chat.findMany({
+            where:{
+                roomId:roomId
+            },
+            orderBy:{
+                id:"desc"
+            },
+            take:50 //return only latest 50 messages
+        });
+        res.json({
+            messages
+        }); 
+    } catch (error) {
+        res.json({error})
+    }
+    
 })
 
 
