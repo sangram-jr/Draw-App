@@ -1,7 +1,7 @@
 import axios from "axios";
 import { BACKEND_URL } from "../../../config";
 import { ChatRoom } from "../../../components/ChatRoom";
-import { log } from "console";
+
 
 
 export async function getRoomId(slug:string){
