@@ -1,3 +1,7 @@
+import { HTTP_BACKEND } from "@/config";
+import axios from "axios";
+import { json } from "stream/consumers";
+
 type Shape={
     type:"rect",
     x:number,
@@ -11,19 +15,31 @@ type Shape={
     radius:number
 }
 
-export function initDraw(canvas:HTMLCanvasElement){
+export async function initDraw(canvas:HTMLCanvasElement,roomId:string,socket:WebSocket){
 
     //create a global array where i store all the shape and display to the user.
-    const existingShapes:Shape[]=[];
+    const existingShapes:Shape[]=await getExistingShapes(roomId);
     //get context or get shapes
     const ctx=canvas.getContext("2d");
 
     if(!ctx){
         return;
     }
-    //set canvas or screen black color
-    ctx.fillStyle="rgba(0,0,0)"
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    //when user draw a shape that need to push to the existingShape array.
+    socket.onmessage=(event)=>{
+        const message=JSON.parse(event.data);
+
+        if(message.type==="chat"){
+            const parsedMessage=JSON.parse(message.message);
+            existingShapes.push(parsedMessage.shape);
+            //clearCanvas act as a rerendering(after push , rerender everything)
+            clearCanvas(existingShapes,canvas,ctx);
+
+        }
+    }
+
+    clearCanvas(existingShapes,canvas,ctx);
 
     let clicked=false;
     let startX=0;
@@ -42,14 +58,24 @@ export function initDraw(canvas:HTMLCanvasElement){
         //find width & height of shape
         const width=e.clientX-startX;
         const height=e.clientY-startY;
-        //when i leave the mouse,push the shape in the existingShapes array so that user can create multiple rectangle and previous rectangle do not disappear.
-        existingShapes.push({
+
+        const shape:Shape={
             type:"rect",
             x:startX,
             y:startY,
             width:width,
             height:height
-        });
+        }
+        //when i leave the mouse,push the shape in the existingShapes array so that user can create multiple rectangle at the same time and previous rectangle do not disappear.
+        existingShapes.push(shape);
+        //when user leave mouse,send the shape 
+        socket.send(JSON.stringify({
+            type:"chat",
+            message:JSON.stringify({
+                shape
+            }),
+            roomId:roomId
+        }))
                 
     })
 
@@ -70,6 +96,8 @@ export function initDraw(canvas:HTMLCanvasElement){
         
 }
 
+
+//re-render logic(when anything change, then i call this clearCanvas function to rerender everything)
 function clearCanvas(existingShapes:Shape[],canvas:HTMLCanvasElement,ctx:CanvasRenderingContext2D){
     //clear rectangle
     ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -86,4 +114,15 @@ function clearCanvas(existingShapes:Shape[],canvas:HTMLCanvasElement,ctx:CanvasR
             ctx.strokeRect(shape.x,shape.y,shape.width,shape.height);
         }
     })
+}
+
+//get the data from backend
+async function getExistingShapes(roomId:string){
+    const response=await axios.get(`${HTTP_BACKEND}/chat/${roomId}`);
+    const messages=response.data.messages;
+    const shape=messages.map((x:{message:string})=>{
+        const messageData=JSON.parse(x.message);
+        return messageData.shape;
+    })
+    return shape;
 }

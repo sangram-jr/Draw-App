@@ -66,7 +66,12 @@ wss.on('connection', function connection(ws,request) {
   //get the message from user and send this message to server
   ws.on('message', async function message(data) {
     //msg that server get from the user, that is string, we need to convert this in a object
-    const parseData=JSON.parse(data as unknown as string);
+    let parseData;
+    if(typeof data !=="string"){
+      parseData=JSON.parse(data.toString());
+    }else{
+      parseData=JSON.parse(data);
+    }
 
     if(parseData.type==="join_room"){            //parseData->  {"type":"join_room","roomId":"red"}
       //find the user from users global array
@@ -98,7 +103,7 @@ wss.on('connection', function connection(ws,request) {
       //1st store the message to the db
       await prisma.chat.create({
         data:{
-          roomId,
+          roomId:Number(roomId),
           message,
           userId
         }
