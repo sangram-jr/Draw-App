@@ -4,6 +4,13 @@ import { IconButton } from "./IconButton";
 import { Pencil,Circle,RectangleHorizontal } from 'lucide-react';
 
 
+declare global {
+  interface Window {
+    selectedTool: string; 
+  }
+}
+
+
 type Shape='circle' | 'pencil' | 'rect';
 
 interface canvasProps{
@@ -13,6 +20,11 @@ interface canvasProps{
 export function Canvas({roomId,socket}:canvasProps){
     const canvasRef=useRef<HTMLCanvasElement>(null);
     const [selectedTool,setSelectedTool]=useState<Shape>('pencil');
+
+    //if window obj change, set selectedTool's state to global window obj
+    useEffect(()=>{
+        window.selectedTool=selectedTool;
+    },[selectedTool])
         
     useEffect(()=>{
         if(canvasRef.current){

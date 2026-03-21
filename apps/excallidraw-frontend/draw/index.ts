@@ -1,6 +1,6 @@
 import { HTTP_BACKEND } from "@/config";
 import axios from "axios";
-import { json } from "stream/consumers";
+
 
 type Shape={
     type:"rect",
@@ -13,6 +13,12 @@ type Shape={
     centerX:number,
     centerY:number,
     radius:number
+} | {
+    type:"pencil",
+    startX:number,
+    startY:number,
+    endX:number,
+    endY:number
 }
 
 export async function initDraw(canvas:HTMLCanvasElement,roomId:string,socket:WebSocket){
@@ -59,15 +65,35 @@ export async function initDraw(canvas:HTMLCanvasElement,roomId:string,socket:Web
         const width=e.clientX-startX;
         const height=e.clientY-startY;
 
-        const shape:Shape={
-            type:"rect",
-            x:startX,
-            y:startY,
-            width:width,
-            height:height
+        //based on selectedTool's state , we push shape into existingShapes global array.
+        const selectedTool=window.selectedTool;
+        let shape:Shape | null=null;
+        if(selectedTool==='rect'){
+            shape={
+                type:"rect",
+                x:startX,
+                y:startY,
+                width:width,
+                height:height
+            }
+        }else if(selectedTool==='circle'){
+            const radius=Math.max(width,height)/2;
+            shape={
+                type:"circle",
+                radius:radius,
+                centerX:startX+radius,
+                centerY:startY+radius
+            }
+
+        }
+        if(!shape){
+            return;
         }
         //when i leave the mouse,push the shape in the existingShapes array so that user can create multiple rectangle at the same time and previous rectangle do not disappear.
         existingShapes.push(shape);
+
+        
+        
         //when user leave mouse,send the shape 
         socket.send(JSON.stringify({
             type:"chat",
@@ -88,8 +114,22 @@ export async function initDraw(canvas:HTMLCanvasElement,roomId:string,socket:Web
             clearCanvas(existingShapes,canvas,ctx);
             //set rectangle white color
             ctx.strokeStyle="rgba(255,255,255)";
-            //create rectangle from startX to width and startY to height
-            ctx.strokeRect(startX,startY,width,height);
+
+            //based on selectedTool's state , we draw shape
+            const selectedTool=window.selectedTool;
+            if(selectedTool==='rect'){
+                //create rectangle from startX to width and startY to height
+                ctx.strokeRect(startX,startY,width,height);
+            }else if(selectedTool==='circle'){
+                const radius=Math.max(width,height)/2;
+                const centerX=startX+radius;
+                const centerY=startY+radius;
+                ctx.beginPath();
+                ctx.arc(centerX,centerY,radius,0,Math.PI*2);
+                ctx.stroke();
+                ctx.closePath();
+            }
+            
         }
                 
     })
@@ -112,6 +152,11 @@ function clearCanvas(existingShapes:Shape[],canvas:HTMLCanvasElement,ctx:CanvasR
             ctx.strokeStyle="rgba(255,255,255)";
             //create rectangle from x to width and y to height
             ctx.strokeRect(shape.x,shape.y,shape.width,shape.height);
+        }else if(shape.type==='circle'){
+            ctx.beginPath();
+            ctx.arc(shape.centerX,shape.centerY,shape.radius,0,Math.PI*2);
+            ctx.stroke();
+            ctx.closePath();
         }
     })
 }
