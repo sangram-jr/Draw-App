@@ -148,7 +148,7 @@ app.get('/chat/:roomId',async(req,res)=>{
             orderBy:{
                 id:"desc"
             },
-            take:50 //return only latest 50 messages
+            take:500 //return only latest 500 messages
         });
         res.json({
             messages

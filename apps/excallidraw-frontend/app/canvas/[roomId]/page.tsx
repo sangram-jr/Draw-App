@@ -10,7 +10,7 @@ interface CanvasPageProps {
 
 export default async function Canvaspage({params}:CanvasPageProps){
     const roomId=(await params).roomId
-    console.log(roomId);
+    // console.log(roomId);
 
     return <RoomCanvas roomId={roomId} />
 }

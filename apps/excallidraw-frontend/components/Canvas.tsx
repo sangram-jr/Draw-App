@@ -11,7 +11,7 @@ declare global {
 }
 
 
-type Shape='circle' | 'pencil' | 'rect';
+export type Tool='circle' | 'pencil' | 'rect';
 
 interface canvasProps{
     roomId:string,
@@ -19,7 +19,7 @@ interface canvasProps{
 }
 export function Canvas({roomId,socket}:canvasProps){
     const canvasRef=useRef<HTMLCanvasElement>(null);
-    const [selectedTool,setSelectedTool]=useState<Shape>('pencil');
+    const [selectedTool,setSelectedTool]=useState<Tool>('pencil');
 
     //if window obj change, set selectedTool's state to global window obj
     useEffect(()=>{
@@ -43,8 +43,8 @@ export function Canvas({roomId,socket}:canvasProps){
 
 
 interface TopbarProps{
-    selectedTool:Shape,
-    setSelectedTool:(s:Shape)=>void
+    selectedTool:Tool,
+    setSelectedTool:(s:Tool)=>void
 }
 
 function Topbar({selectedTool,setSelectedTool}:TopbarProps){
