@@ -12,7 +12,12 @@ export function RoomCanvas({roomId}:canvasProps){
     const [socket,setSocket]=useState<WebSocket | null>(null);
 
     useEffect(()=>{
-        const ws=new WebSocket(`${WS_URL}?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5OWYzZDNhZS05NWJlLTQxNDQtYmQ2YS1iOGVmZDRiNjFjMWEiLCJpYXQiOjE3NzM5ODY1NjR9.hqc-hp9VJvSPXMr30o59xkSkC1iXej7BO05l7CJ3ucY`);
+        const token=localStorage.getItem("token");
+        if(!token){
+            alert("User not authenticated");
+            return;
+        }
+        const ws=new WebSocket(`${WS_URL}?token=${token}`);
         ws.onopen=()=>{
             setSocket(ws);
             ws.send(JSON.stringify({
