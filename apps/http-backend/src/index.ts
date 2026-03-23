@@ -46,7 +46,7 @@ app.post('/signup',async(req,res)=>{
 
     //create user
     try {
-        const user=await prisma.user.create({
+        const user=await prisma.user.create({ 
             data:{
                 email:parseData.data.email,
                 password:hashPassword,

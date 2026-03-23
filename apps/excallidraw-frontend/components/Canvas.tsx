@@ -2,6 +2,7 @@ import { initDraw } from "@/draw";
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "./IconButton";
 import { Pencil,Circle,RectangleHorizontal } from 'lucide-react';
+import { Game } from "@/draw/Game";
 
 
 declare global {
@@ -20,16 +21,18 @@ interface canvasProps{
 export function Canvas({roomId,socket}:canvasProps){
     const canvasRef=useRef<HTMLCanvasElement>(null);
     const [selectedTool,setSelectedTool]=useState<Tool>('pencil');
+    const [game,setGame]=useState<Game>();
 
-    //if window obj change, set selectedTool's state to global window obj
+    //when user click any tool('rect' | 'circle' | 'pencil'), save the state. In Game class , we have setTool function where we store the current tool's state.
     useEffect(()=>{
-        window.selectedTool=selectedTool;
-    },[selectedTool])
-        
+        game?.setTool(selectedTool);
+    },[selectedTool,game])
+    
+    //when user draw, the create a instane of Game class(Game class-> all draw logic,mouse event listener is present)
     useEffect(()=>{
         if(canvasRef.current){
-            const canvas=canvasRef.current;
-            initDraw(canvas,roomId,socket);
+            const g=new Game(canvasRef.current,roomId,socket);
+            setGame(g);
         }
         
     },[canvasRef])

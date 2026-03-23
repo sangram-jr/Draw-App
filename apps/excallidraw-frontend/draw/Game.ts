@@ -46,21 +46,27 @@ export class Game{
 
     }
 
+    //Called from Canvas.tsx
+    //When user clicks button → tool changes
     setTool(tool:'circle' | 'rect' | 'pencil'){
         this.selectedTool=tool;
     }
 
+    //load old shapes
     async init(){
         this.existingShapes=await getExistingShapes(this.roomId);
         this.clearCanvas();
     }
 
+    //listen WebSocket
     initHandlers(){
         //when user draw a shape that need to push to the existingShape array.
         this.socket.onmessage=(event)=>{
+            //incoming message from server
             const message=JSON.parse(event.data);
 
             if(message.type==="chat"){
+                //When another user draws: server sends shape,you receive it,add to your shapes,redraw everything(by clearCanvas function)
                 const parsedMessage=JSON.parse(message.message);
                 this.existingShapes.push(parsedMessage.shape);
                 //clearCanvas act as a rerendering(after push , rerender everything)
@@ -75,7 +81,7 @@ export class Game{
     clearCanvas(){
         //clear rectangle
         this.ctx.clearRect(0,0,this.canvas.width,this.canvas.height);
-        //set canvas or screen black color
+        //set canvas or screen black background
         this.ctx.fillStyle="rgba(0,0,0,1)"
         this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
 
@@ -142,12 +148,10 @@ export class Game{
 
             
             
-            //when user leave mouse,send the shape 
+            //when user leave mouse,send the shape to server
             this.socket.send(JSON.stringify({
                 type:"chat",
-                message:JSON.stringify({
-                    shape
-                }),
+                message:JSON.stringify({ shape }),
                 roomId:this.roomId
             }))
                     

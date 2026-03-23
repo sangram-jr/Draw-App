@@ -68,7 +68,7 @@ wss.on('connection', function connection(ws,request) {
     //msg that server get from the user, that is string, we need to convert this in a object
     let parseData;
     if(typeof data !=="string"){
-      parseData=JSON.parse(data.toString());
+      parseData=JSON.parse(data.toString());   
     }else{
       parseData=JSON.parse(data);
     }
