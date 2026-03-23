@@ -36,7 +36,8 @@ app.post('/signup',async(req,res)=>{
     //zod validation
     const parseData=CreateUserSchema.safeParse(req.body);
     if(!parseData.success){
-        return res.status(403).json({message:"Incorrect Inputs"});
+        const errorMessage=parseData.error.issues[0]?.message || "Invalid Inputs";
+        return res.status(403).json({message:errorMessage});
     }
 
     //hash password

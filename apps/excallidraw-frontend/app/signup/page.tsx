@@ -21,8 +21,12 @@ export default function Signup() {
       });
 
       router.push("/signin");
-    } catch (e) {
-      alert("Signup failed");
+    } catch (e: unknown) { //display exact error message from zod
+      if (axios.isAxiosError(e)) {
+        alert(e.response?.data?.message || "Signup failed");
+      } else {
+        alert("Something went wrong");
+      }
     }
   }
 
@@ -38,7 +42,7 @@ export default function Signup() {
         {/* Inputs */}
         <input
           type="text"
-          placeholder="Name"
+          placeholder="Username"
           className="w-full mb-4 px-4 py-3 bg-black border border-gray-700 rounded-lg focus:outline-none focus:border-white"
           value={name}
           onChange={(e) => setName(e.target.value)}
