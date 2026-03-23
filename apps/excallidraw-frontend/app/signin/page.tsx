@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import { HTTP_BACKEND } from "@/config";
 
 export default function Signin() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function Signin() {
 
   async function handleSignin() {
     try {
-      const res = await axios.post("http://localhost:3001/signin", {
+      const res = await axios.post(`${HTTP_BACKEND}/signin`, {
         email,
         password,
       });
