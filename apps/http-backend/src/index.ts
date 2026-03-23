@@ -168,6 +168,11 @@ app.get('/room/:slug',async(req,res)=>{
             slug:slug
         }
     });
+    if (!room) {
+        return res.status(404).json({
+            message: "Room not found"
+        });
+    }
     res.json({room});
 })
 

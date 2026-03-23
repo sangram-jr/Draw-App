@@ -46,17 +46,27 @@ export class Game{
 
     }
 
+    //destroy all mouseHandlers  event
+    destroy(){
+        this.canvas.removeEventListener("mousedown",this.mouseDownHandler);
+        this.canvas.removeEventListener("mouseup",this.mouseUpHandler);
+        this.canvas.removeEventListener("mousemove",this.mouseMoveHandler);
+    }
+
+
     //Called from Canvas.tsx
     //When user clicks button → tool changes
     setTool(tool:'circle' | 'rect' | 'pencil'){
         this.selectedTool=tool;
     }
 
+
     //load old shapes
     async init(){
         this.existingShapes=await getExistingShapes(this.roomId);
         this.clearCanvas();
     }
+
 
     //listen WebSocket
     initHandlers(){
@@ -76,6 +86,8 @@ export class Game{
         }
 
     }
+
+
 
     //re-render logic(when anything change, then i call this clearCanvas function to rerender everything)
     clearCanvas(){
@@ -101,89 +113,92 @@ export class Game{
         })
     }
 
-    //mouse handlers
-    initMouseHandlers(){
 
-        //when user down the mouse
-        this.canvas.addEventListener("mousedown",(e)=>{
-            this.clicked=true;
-            this.startX=e.clientX;
-            this.startY=e.clientY;
-        })
+    mouseDownHandler=(e:MouseEvent)=>{
+        this.clicked=true;
+        this.startX=e.clientX;
+        this.startY=e.clientY;
+    }
 
+    mouseUpHandler=(e:MouseEvent)=>{
+        this.clicked=false;
+        //find width & height of shape
+        const width=e.clientX-this.startX;
+        const height=e.clientY-this.startY;
 
-        //when user leaves the mouse
-        this.canvas.addEventListener("mouseup",(e)=>{
-            this.clicked=false;
-            //find width & height of shape
+        //based on selectedTool's state , we push shape into existingShapes global array.
+        const selectedTool=this.selectedTool;
+        let shape:Shape | null=null;
+        if(selectedTool==='rect'){
+            shape={
+                type:"rect",
+                x:this.startX,
+                y:this.startY,
+                width:width,
+                height:height
+            }
+        }else if(selectedTool==='circle'){
+            const radius=Math.max(width,height)/2;
+            shape={
+                type:"circle",
+                radius:radius,
+                centerX:this.startX+radius,
+                centerY:this.startY+radius
+            }
+
+        }
+        if(!shape){
+            return;
+        }
+        //when i leave the mouse,push the shape in the existingShapes array so that user can create multiple rectangle at the same time and previous rectangle do not disappear.
+        this.existingShapes.push(shape);
+
+            
+            
+        //when user leave mouse,send the shape to server
+        this.socket.send(JSON.stringify({
+            type:"chat",
+            message:JSON.stringify({ shape }),
+            roomId:this.roomId
+        }))
+    }
+
+    mouseMoveHandler=(e:MouseEvent)=>{
+        if(this.clicked){
+            //find height and width of shape
             const width=e.clientX-this.startX;
             const height=e.clientY-this.startY;
+            this.clearCanvas();
+            //set rectangle white color
+            this.ctx.strokeStyle="rgba(255,255,255)";
 
-            //based on selectedTool's state , we push shape into existingShapes global array.
+            //based on selectedTool's state , we draw shape
             const selectedTool=this.selectedTool;
-            let shape:Shape | null=null;
             if(selectedTool==='rect'){
-                shape={
-                    type:"rect",
-                    x:this.startX,
-                    y:this.startY,
-                    width:width,
-                    height:height
-                }
+                //create rectangle from startX to width and startY to height
+                this.ctx.strokeRect(this.startX,this.startY,width,height);
             }else if(selectedTool==='circle'){
                 const radius=Math.max(width,height)/2;
-                shape={
-                    type:"circle",
-                    radius:radius,
-                    centerX:this.startX+radius,
-                    centerY:this.startY+radius
-                }
-
+                const centerX=this.startX+radius;
+                const centerY=this.startY+radius;
+                this.ctx.beginPath();
+                this.ctx.arc(centerX,centerY,Math.abs(radius),0,Math.PI*2);
+                this.ctx.stroke();
+                this.ctx.closePath();
             }
-            if(!shape){
-                return;
-            }
-            //when i leave the mouse,push the shape in the existingShapes array so that user can create multiple rectangle at the same time and previous rectangle do not disappear.
-            this.existingShapes.push(shape);
+                
+        }
+    }
 
-            
-            
-            //when user leave mouse,send the shape to server
-            this.socket.send(JSON.stringify({
-                type:"chat",
-                message:JSON.stringify({ shape }),
-                roomId:this.roomId
-            }))
-                    
-        })
+    // Add mouse handlers event
+    initMouseHandlers(){
+        //when user down the mouse
+        this.canvas.addEventListener("mousedown",this.mouseDownHandler);
+
+        //when user leaves the mouse
+        this.canvas.addEventListener("mouseup",this.mouseUpHandler);
 
         //when user move the mouse
-        this.canvas.addEventListener("mousemove",(e)=>{
-            if(this.clicked){
-                //find height and width of shape
-                const width=e.clientX-this.startX;
-                const height=e.clientY-this.startY;
-                this.clearCanvas();
-                //set rectangle white color
-                this.ctx.strokeStyle="rgba(255,255,255)";
-
-                //based on selectedTool's state , we draw shape
-                const selectedTool=this.selectedTool;
-                if(selectedTool==='rect'){
-                    //create rectangle from startX to width and startY to height
-                    this.ctx.strokeRect(this.startX,this.startY,width,height);
-                }else if(selectedTool==='circle'){
-                    const radius=Math.max(width,height)/2;
-                    const centerX=this.startX+radius;
-                    const centerY=this.startY+radius;
-                    this.ctx.beginPath();
-                    this.ctx.arc(centerX,centerY,Math.abs(radius),0,Math.PI*2);
-                    this.ctx.stroke();
-                    this.ctx.closePath();
-                }
-                
-            }
-                    
-        })
+        this.canvas.addEventListener("mousemove",this.mouseMoveHandler);
     }
 }

@@ -2,6 +2,7 @@
 import { WS_URL } from "@/config";
 import { useEffect, useState } from "react";
 import { Canvas } from "./Canvas";
+import { useRouter } from "next/navigation";
 
 
 interface canvasProps{
@@ -10,14 +11,20 @@ interface canvasProps{
 
 export function RoomCanvas({roomId}:canvasProps){
     const [socket,setSocket]=useState<WebSocket | null>(null);
+    const router=useRouter();
 
     useEffect(()=>{
         const token=localStorage.getItem("token");
         if(!token){
-            alert("User not authenticated");
+            router.push("signin");
             return;
         }
         const ws=new WebSocket(`${WS_URL}?token=${token}`);
+
+        ws.onerror=()=>{
+            console.log("Websocket connection Error")
+        }
+
         ws.onopen=()=>{
             setSocket(ws);
             ws.send(JSON.stringify({
@@ -25,7 +32,13 @@ export function RoomCanvas({roomId}:canvasProps){
                 roomId:roomId
             }))
         }
-    },[]);
+
+        //cleanup
+        return()=>{
+            ws.close();
+        }
+
+    },[roomId]);
 
     if(!socket){
         return <div>

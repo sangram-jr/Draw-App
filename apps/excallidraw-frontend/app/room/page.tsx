@@ -33,9 +33,13 @@ export default function RoomPage() {
 
   async function handleJoinRoom() {
     try {
-      const res = await axios.get(
-        `${HTTP_BACKEND}/room/${slug}`
-      );
+      //if slug is empty or only space
+      if (!slug.trim()) {
+        alert("Enter room name");
+        return;
+      }
+      
+      const res = await axios.get(`${HTTP_BACKEND}/room/${slug}`);
 
       const roomId = res.data.room.id;
 
@@ -61,14 +65,14 @@ export default function RoomPage() {
       <div className="flex gap-4">
         <button
           onClick={handleCreateRoom}
-          className="px-6 py-3 bg-white text-black rounded-lg font-semibold"
+          className="px-6 py-3 bg-white text-black rounded-lg font-semibold cursor-pointer"
         >
           Create Room
         </button>
 
         <button
           onClick={handleJoinRoom}
-          className="px-6 py-3 border border-gray-600 rounded-lg"
+          className="px-6 py-3 border border-gray-600 rounded-lg cursor-pointer"
         >
           Join Room
         </button>
