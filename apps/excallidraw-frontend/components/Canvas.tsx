@@ -1,15 +1,14 @@
-import { initDraw } from "@/draw";
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "./IconButton";
 import { Pencil,Circle,RectangleHorizontal } from 'lucide-react';
 import { Game } from "@/draw/Game";
 
 
-declare global {
+/*declare global {
   interface Window {
     selectedTool: string; 
   }
-}
+}*/
 
 
 export type Tool='circle' | 'pencil' | 'rect';
@@ -40,7 +39,7 @@ export function Canvas({roomId,socket}:canvasProps){
             }
         }
         
-    },[canvasRef])
+    },[roomId,socket]);
         
     return <div style={{height:"100vh",overflow:"hidden"}}>
         <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight}></canvas>

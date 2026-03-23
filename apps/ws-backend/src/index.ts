@@ -111,7 +111,7 @@ wss.on('connection', function connection(ws,request) {
 
       //how many roomId include in the rooms , send them message.(2nd broadcast the message to everyone)
       users.forEach(user=>{
-        if(user.rooms.includes(roomId)){
+        if(user.rooms.includes(roomId) && user.ws!==ws){
           user.ws.send(JSON.stringify({
             type:"chat",
             message:message,

@@ -51,6 +51,8 @@ export class Game{
         this.canvas.removeEventListener("mousedown",this.mouseDownHandler);
         this.canvas.removeEventListener("mouseup",this.mouseUpHandler);
         this.canvas.removeEventListener("mousemove",this.mouseMoveHandler);
+        //websocket cleanup
+        this.socket.onmessage = null;
     }
 
 
@@ -70,9 +72,9 @@ export class Game{
 
     //listen WebSocket
     initHandlers(){
-        //when user draw a shape that need to push to the existingShape array.
+        //Incoming msg from server
         this.socket.onmessage=(event)=>{
-            //incoming message from server
+            //parse message from server(data store string format , we need to convert it to object)
             const message=JSON.parse(event.data);
 
             if(message.type==="chat"){
@@ -98,7 +100,7 @@ export class Game{
         this.ctx.fillRect(0,0,this.canvas.width,this.canvas.height);
 
         //display the existing shapes 
-        this.existingShapes.map((shape)=>{
+        this.existingShapes.forEach((shape)=>{
             if(shape.type==='rect'){
                 //set rectangle white color
                 this.ctx.strokeStyle="rgba(255,255,255)";
@@ -152,8 +154,8 @@ export class Game{
         }
         //when i leave the mouse,push the shape in the existingShapes array so that user can create multiple rectangle at the same time and previous rectangle do not disappear.
         this.existingShapes.push(shape);
-
-            
+        //all shapes redrawn
+        this.clearCanvas();  
             
         //when user leave mouse,send the shape to server
         this.socket.send(JSON.stringify({
