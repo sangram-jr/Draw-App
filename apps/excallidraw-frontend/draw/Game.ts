@@ -14,10 +14,7 @@ type Shape={
     radius:number
 } | {
     type:"pencil",
-    startX:number,
-    startY:number,
-    endX:number,
-    endY:number
+    points:{x:number,y:number}[]
 }
 
 
@@ -32,6 +29,7 @@ export class Game{
     private startX=0;
     private startY=0;
     private selectedTool:Tool='circle';
+    private currentPoints:{x:number,y:number}[]=[];
 
     constructor(canvas:HTMLCanvasElement,roomId:string,socket:WebSocket){
         this.canvas=canvas;
@@ -89,6 +87,21 @@ export class Game{
 
     }
 
+    //draw pencil logic
+    drawPencil(points:{x:number,y:number}[]){
+        this.ctx.beginPath();
+        for(let i=0;i<points.length;i++){
+            const p=points[i];
+            if(i===0){
+                this.ctx.moveTo(p.x,p.y);
+            }else{
+                this.ctx.lineTo(p.x,p.y);
+            }
+        }
+        this.ctx.stroke();
+        this.ctx.closePath();
+    }
+
 
 
     //re-render logic(when anything change, then i call this clearCanvas function to rerender everything)
@@ -111,6 +124,8 @@ export class Game{
                 this.ctx.arc(shape.centerX,shape.centerY,Math.abs(shape.radius),0,Math.PI*2);
                 this.ctx.stroke();
                 this.ctx.closePath();
+            }else if(shape.type==='pencil'){
+                this.drawPencil(shape.points);
             }
         })
     }
@@ -118,15 +133,29 @@ export class Game{
 
     mouseDownHandler=(e:MouseEvent)=>{
         this.clicked=true;
-        this.startX=e.clientX;
-        this.startY=e.clientY;
+        //fix the canvas cordinates
+        const rect=this.canvas.getBoundingClientRect();
+        const x=e.clientX-rect.left;
+        const y=e.clientY-rect.top;
+        this.startX=x;
+        this.startY=y;
+
+        //when mouse down, Start new pencil drawing
+        if(this.selectedTool==='pencil'){
+            this.currentPoints=[{x,y}];
+        }
     }
 
     mouseUpHandler=(e:MouseEvent)=>{
         this.clicked=false;
+
+        //fix the canvas cordinates
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
         //find width & height of shape
-        const width=e.clientX-this.startX;
-        const height=e.clientY-this.startY;
+        const width=x-this.startX;
+        const height=y-this.startY;
 
         //based on selectedTool's state , we push shape into existingShapes global array.
         const selectedTool=this.selectedTool;
@@ -148,6 +177,12 @@ export class Game{
                 centerY:this.startY+radius
             }
 
+        }else if(selectedTool==='pencil'){
+            //save full pencil drawing
+            shape={
+                type:"pencil",
+                points:this.currentPoints
+            }
         }
         if(!shape){
             return;
@@ -176,6 +211,11 @@ export class Game{
 
             //based on selectedTool's state , we draw shape
             const selectedTool=this.selectedTool;
+            //fix the canvas cordinates
+            const rect = this.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
             if(selectedTool==='rect'){
                 //create rectangle from startX to width and startY to height
                 this.ctx.strokeRect(this.startX,this.startY,width,height);
@@ -187,6 +227,11 @@ export class Game{
                 this.ctx.arc(centerX,centerY,Math.abs(radius),0,Math.PI*2);
                 this.ctx.stroke();
                 this.ctx.closePath();
+            }else if(selectedTool==='pencil'){
+                //when mouse move, push all the new points(x,y) into the currentPoints array and call drawPencil function
+                this.currentPoints.push({x,y});
+                this.clearCanvas();
+                this.drawPencil(this.currentPoints);
             }
                 
         }
