@@ -90,6 +90,25 @@ export class Game{
 
     }
 
+
+    //draw rectangle logic
+    drawRect(x: number, y: number, width: number, height: number) {
+        //set rectangle white color
+        this.ctx.strokeStyle = "rgba(255,255,255)";
+        //create rectangle from x to width and y to height
+        this.ctx.strokeRect(x, y, width, height);
+    }
+
+
+    //draw circle logic
+    drawCircle(centerX: number, centerY: number, radius: number) {
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, Math.abs(radius), 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.closePath();
+    }
+
+
     //draw pencil logic
     drawPencil(points:{x:number,y:number}[]){
         this.ctx.beginPath();
@@ -118,15 +137,9 @@ export class Game{
         //display the existing shapes 
         this.existingShapes.forEach((shape)=>{
             if(shape.type==='rect'){
-                //set rectangle white color
-                this.ctx.strokeStyle="rgba(255,255,255)";
-                //create rectangle from x to width and y to height
-                this.ctx.strokeRect(shape.x,shape.y,shape.width,shape.height);
+                this.drawRect(shape.x,shape.y,shape.width,shape.height,);
             }else if(shape.type==='circle'){
-                this.ctx.beginPath();
-                this.ctx.arc(shape.centerX,shape.centerY,Math.abs(shape.radius),0,Math.PI*2);
-                this.ctx.stroke();
-                this.ctx.closePath();
+                this.drawCircle(shape.centerX,shape.centerY,shape.radius);
             }else if(shape.type==='pencil'){
                 this.drawPencil(shape.points);
             }
@@ -205,31 +218,28 @@ export class Game{
 
     mouseMoveHandler=(e:MouseEvent)=>{
         if(this.clicked){
+            //fix the canvas cordinates
+            const rect = this.canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
             //find height and width of shape
-            const width=e.clientX-this.startX;
-            const height=e.clientY-this.startY;
+            const width=x-this.startX;
+            const height=y-this.startY;
+            
             this.clearCanvas();
             //set rectangle white color
             this.ctx.strokeStyle="rgba(255,255,255)";
 
             //based on selectedTool's state , we draw shape
             const selectedTool=this.selectedTool;
-            //fix the canvas cordinates
-            const rect = this.canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
 
             if(selectedTool==='rect'){
-                //create rectangle from startX to width and startY to height
-                this.ctx.strokeRect(this.startX,this.startY,width,height);
+                this.drawRect(this.startX, this.startY, width, height);
             }else if(selectedTool==='circle'){
                 const radius=Math.max(width,height)/2;
                 const centerX=this.startX+radius;
                 const centerY=this.startY+radius;
-                this.ctx.beginPath();
-                this.ctx.arc(centerX,centerY,Math.abs(radius),0,Math.PI*2);
-                this.ctx.stroke();
-                this.ctx.closePath();
+                this.drawCircle(centerX, centerY, radius);
             }else if(selectedTool==='pencil'){
                 //when mouse move, push all the new points(x,y) into the currentPoints array and call drawPencil function
                 this.currentPoints.push({x,y});
