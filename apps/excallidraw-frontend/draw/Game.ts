@@ -41,7 +41,10 @@ export class Game{
         this.init();
         this.initHandlers();
         this.initMouseHandlers();
-
+        //for smooth lines(pencil logic)
+        this.ctx.lineJoin = "round";
+        this.ctx.lineCap = "round";
+        this.ctx.lineWidth = 2;
     }
 
     //destroy all mouseHandlers  event
