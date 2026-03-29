@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { IconButton } from "./IconButton";
-import { Pencil,Circle,RectangleHorizontal } from 'lucide-react';
+import { Pencil,Circle,RectangleHorizontal,Eraser } from 'lucide-react';
 import { Game } from "@/draw/Game";
 
 
@@ -11,7 +11,7 @@ import { Game } from "@/draw/Game";
 }*/
 
 
-export type Tool='circle' | 'pencil' | 'rect';
+export type Tool='circle' | 'pencil' | 'rect' |'eraser';
 
 interface canvasProps{
     roomId:string,
@@ -30,8 +30,11 @@ export function Canvas({roomId,socket}:canvasProps){
     //when user draw, the create a instane of Game class(Game class-> all draw logic,mouse event listener is present)
     useEffect(()=>{
         if(canvasRef.current){
+           // canvasRef.current.style.cursor =selectedTool === "eraser" ? "crosshair" : "default";
             const g=new Game(canvasRef.current,roomId,socket);
+            //g.setTool(selectedTool);
             setGame(g);
+            //g.setTool(selectedTool);
 
             //clean up
             return()=>{
@@ -71,6 +74,12 @@ function Topbar({selectedTool,setSelectedTool}:TopbarProps){
                 onClick={()=>{setSelectedTool("rect")}}
                 icon={<RectangleHorizontal/>}
                 activated={selectedTool==="rect"}
+            />
+            <IconButton 
+                onClick={()=>{setSelectedTool("eraser");
+                }}
+                icon={<Eraser/>}
+                activated={selectedTool==="eraser"}
             />
         </div>
     </div>

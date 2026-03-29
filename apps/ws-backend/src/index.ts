@@ -72,7 +72,7 @@ wss.on('connection', function connection(ws,request) {
     }else{
       parseData=JSON.parse(data);
     }
-
+    console.log("WS received:", parseData);
     if(parseData.type==="join_room"){            //parseData->  {"type":"join_room","roomId":"red"}
       //find the user from users global array
       const user=users.find(x=>x.ws===ws);
@@ -119,6 +119,39 @@ wss.on('connection', function connection(ws,request) {
           }))
         }
       })
+    }
+    if(parseData.type==="erase"){
+      const roomId=parseData.roomId;
+      const shapeId=parseData.id;
+      //find the room
+      const chats=await prisma.chat.findMany({
+        where:{
+          roomId:Number(roomId)
+        }
+      });
+      //find the chats from the room
+      for(const chat of chats){
+        const parsed=JSON.parse(chat.message);
+        if(parsed.shape.id===shapeId){
+          await prisma.chat.delete({
+            where:{
+              id:chat.id
+            }
+          });
+          break;
+        }
+      }
+      //broadcast
+      users.forEach(user=>{
+        if(user.rooms.includes(roomId) && user.ws!==ws){
+          user.ws.send(JSON.stringify({
+            type:'erase',
+            id:shapeId,
+            roomId
+          }))
+        }
+      })
+
     }
 
   });

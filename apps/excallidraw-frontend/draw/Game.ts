@@ -1,18 +1,22 @@
 import { Tool } from "@/components/Canvas";
 import { getExistingShapes } from "./http";
+import {v4 as uuidv4} from 'uuid';
 
 type Shape={
+    id:string,
     type:"rect",
     x:number,
     y:number,
     width:number,
     height:number
 } | {
+    id:string,
     type:"circle",
     centerX:number,
     centerY:number,
     radius:number
 } | {
+    id:string,
     type:"pencil",
     points:{x:number,y:number}[]
 }
@@ -59,7 +63,8 @@ export class Game{
 
     //Called from Canvas.tsx
     //When user clicks button → tool changes
-    setTool(tool:'circle' | 'rect' | 'pencil'){
+    setTool(tool:'circle' | 'rect' | 'pencil' |'eraser'){
+        //console.log("Tool changed to:", tool);
         this.selectedTool=tool;
     }
 
@@ -85,6 +90,11 @@ export class Game{
                 //clearCanvas act as a rerendering(after push , rerender everything)
                 this.clearCanvas();
 
+            }
+            if(message.type==="erase"){
+                console.log("Received erase:", message);
+                this.existingShapes=this.existingShapes.filter((shape)=> shape.id!==message.id);
+                this.clearCanvas();
             }
         }
 
@@ -123,7 +133,42 @@ export class Game{
         this.ctx.stroke();
         this.ctx.closePath();
     }
+    
 
+
+    //“Did the user click inside this shape?”
+    isPointInsideShape(shape: Shape, x: number, y: number) {
+        if (shape.type === "rect") {
+            //left=shape.x ,  right = shape.x + width  ,  top=shape.y  ,  bottom=shape.y+height
+            //Is click inside this box?
+            const minX = Math.min(shape.x, shape.x + shape.width);
+            const maxX = Math.max(shape.x, shape.x + shape.width);
+            const minY = Math.min(shape.y, shape.y + shape.height);
+            const maxY = Math.max(shape.y, shape.y + shape.height);
+            return (
+                x >= minX &&
+                x <= maxX &&
+                y >= minY &&
+                y <= maxY
+            );
+        }
+
+        if (shape.type === "circle") {
+            const dx = x - shape.centerX;
+            const dy = y - shape.centerY;
+            return dx * dx + dy * dy <= (shape.radius + 5) * (shape.radius + 5);
+        }
+
+        if (shape.type === "pencil") {
+            return shape.points.some(p => {
+                const dx = p.x - x;
+                const dy = p.y - y;
+                return Math.sqrt(dx * dx + dy * dy) < 8;
+            });
+        }
+
+        return false;
+    }
 
 
     //re-render logic(when anything change, then i call this clearCanvas function to rerender everything)
@@ -148,8 +193,37 @@ export class Game{
 
 
     mouseDownHandler=(e:MouseEvent)=>{
+        
+        if(this.selectedTool==='eraser'){
+            //find the canvas cordinates(in canvas where mouse located )
+            const rect=this.canvas.getBoundingClientRect();
+            const x=e.clientX-rect.left;
+            const y=e.clientY-rect.top;
+            //console.log("First shape:", this.existingShapes[0]);
+            //console.log("All shapes:", this.existingShapes);
+            //console.log("Click at:", x, y);
+            //console.log("Shapes:", this.existingShapes);
+            //find shape index
+            const index=this.existingShapes.findIndex(shape=>this.isPointInsideShape(shape,x,y));
+            //console.log("Found index:", index);
+            if(index!==-1){
+                const deletedShape=this.existingShapes[index];
+                //remove locally
+                this.existingShapes.splice(index,1);
+                this.clearCanvas();
+                //send backned call(Tell other users: "Hey, delete this shape also")
+                this.socket.send(JSON.stringify({
+                    type:"erase",
+                    id:deletedShape.id,
+                    roomId:this.roomId
+                }));
+                console.log("Sending erase:", deletedShape.id);
+            }
+            return;
+        }
+        //normal drawing logic
         this.clicked=true;
-        //fix the canvas cordinates
+        //find the canvas cordinates(in canvas where mouse located )
         const rect=this.canvas.getBoundingClientRect();
         const x=e.clientX-rect.left;
         const y=e.clientY-rect.top;
@@ -165,7 +239,7 @@ export class Game{
     mouseUpHandler=(e:MouseEvent)=>{
         this.clicked=false;
 
-        //fix the canvas cordinates
+        //find the canvas cordinates(in canvas where mouse located )
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -178,6 +252,7 @@ export class Game{
         let shape:Shape | null=null;
         if(selectedTool==='rect'){
             shape={
+                id:uuidv4(),
                 type:"rect",
                 x:this.startX,
                 y:this.startY,
@@ -187,6 +262,7 @@ export class Game{
         }else if(selectedTool==='circle'){
             const radius=Math.max(width,height)/2;
             shape={
+                id:uuidv4(),
                 type:"circle",
                 radius:radius,
                 centerX:this.startX+radius,
@@ -196,6 +272,7 @@ export class Game{
         }else if(selectedTool==='pencil'){
             //save full pencil drawing
             shape={
+                id:uuidv4(),
                 type:"pencil",
                 points:this.currentPoints
             }
@@ -218,7 +295,7 @@ export class Game{
 
     mouseMoveHandler=(e:MouseEvent)=>{
         if(this.clicked){
-            //fix the canvas cordinates
+            //find the canvas cordinates(in canvas where mouse located )
             const rect = this.canvas.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
